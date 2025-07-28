@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Blockchain Document Management System</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .network-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-indicator {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.5rem;
+        }
+
+        /* Node Selection */
+        .node-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .faction-group {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .origin-faction { border-color: #007bff; }
+        .dest-faction { border-color: #28a745; }
+
+        .faction-group h4 {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .node-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .node-option:hover {
+            background: #f8f9fa;
+        }
+
+        .node-option input[type="radio"] {
+            margin-right: 8px;
+        }
+
+        /* Form Elements */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin: 15px 0;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #34495e;
+        }
+
+        input[type="file"], select, textarea {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="file"]:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin: 10px 0;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Document List */
+        .document-grid {
+            display: grid;
+            gap: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .document-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            border-left: 4px solid #007bff;
+            transition: transform 0.2s;
+        }
+
+        .document-card:hover {
+            transform: translateX(5px);
+        }
+
+        .document-card.approved {
+            border-left-color: #28a745;
+        }
+
+        .document-card.rejected {
+            border-left-color: #dc3545;
+        }
+
+        .document-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .document-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+
+        .approve-btn {
+            background: #28a745;
+            color: white;
+        }
+
+        .reject-btn {
+            background: #dc3545;
+            color: white;
+        }
+
+        .view-btn {
+            background: #17a2b8;
+            color: white;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-approved {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-rejected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Notifications */
+        .notifications {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .notification {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border-left: 4px solid #3498db;
+            animation: slideIn 0.3s ease;
+            max-width: 400px;
+        }
+
+        .notification.success {
+            border-left-color: #27ae60;
+        }
+
+        .notification.error {
+            border-left-color: #e74c3c;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .node-selector {
+                grid-template-columns: 1fr;
+            }
+            
+            .checkbox-group {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📋 Enhanced Document Management System</h1>
+            <div class="network-status">
+                <span class="status-indicator" id="networkStatus">● Connecting...</span>
+            </div>
+        </header>
+
+        <div class="main-grid">
+            <!-- Send Document Card -->
+            <div class="card">
+                <h2>📤 Send Document</h2>
+                <form id="sendDocumentForm">
+                    <div class="form-group">
+                        <label>Select Document File:</label>
+                        <input type="file" id="documentFile" accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.zip,.csv,.xlsx" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Sender Node:</label>
+                        <div class="node-selector">
+                            <div class="faction-group origin-faction">
+                                <h4>📤 Origin Faction</h4>
+                                <div class="node-option">
+                                    <input type="radio" name="senderNode" value="origin-station" id="sender-origin-station" required>
+                                    <label for="sender-origin-station">🚉 Origin Station</label>
+                                </div>
+                                <div class="node-option">
+                                    <input type="radio" name="senderNode" value="origin-rail" id="sender-origin-rail">
+                                    <label for="sender-origin-rail">🚂 Origin Rail</label>
+                                </div>
+                                <div class="node-option">
+                                    <input type="radio" name="senderNode" value="origin-customs" id="sender-origin-customs">
+                                    <label for="sender-origin-customs">🛃 Origin Customs</label>
+                                </div>
+                                <div class="node-option">
+                                    <input type="radio" name="senderNode" value="origin-border" id="sender-origin-border">
+                                    <label for="sender-origin-border">🛂 Origin Border</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Recipient Node:</label>
+                        <div class="node-selector">
+                            <div class="faction-group dest-faction">
+                                <h4>📥 Destination Faction</h4>
+                                <div class="node-option">
+                                    <input type="radio" name="recipientNode" value="dest-station" id="recipient-dest-station" required>
+                                    <label for="recipient-dest-station">🚉 Dest Station</label>
+                                </div>
+                                <div class="node-option">
+                                    <input type="radio" name="recipientNode" value="dest-rail" id="recipient-dest-rail">
+                                    <label for="recipient-dest-rail">🚂 Dest Rail</label>
+                                </div>
+                                <div class="node-option">
+                                    <input type="radio" name="recipientNode" value="dest-customs" id="recipient-dest-customs">
+                                    <label for="recipient-dest-customs">🛃 Dest Customs</label>
+                                </div>
+                                <div class="node-option">
+                                    <input type="radio" name="recipientNode" value="dest-border" id="recipient-dest-border">
+                                    <label for="recipient-dest-border">🛂 Dest Border</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Allowed Viewers (Same Faction Only):</label>
+                        <div class="checkbox-group" id="allowedViewers">
+                            <!-- Populated dynamically based on sender selection -->
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        📨 Send Document
+                    </button>
+                </form>
+            </div>
+
+            <!-- View Documents Card -->
+            <div class="card">
+                <h2>👁️ View Documents</h2>
+                
+                <div class="form-group">
+                    <label>Select Node to View From:</label>
+                    <select id="viewingNode">
+                        <option value="">Select a node...</option>
+                        <optgroup label="Origin Faction">
+                            <option value="origin-station">🚉 Origin Station</option>
+                            <option value="origin-rail">🚂 Origin Rail</option>
+                            <option value="origin-customs">🛃 Origin Customs</option>
+                            <option value="origin-border">🛂 Origin Border</option>
+                        </optgroup>
+                        <optgroup label="Destination Faction">
+                            <option value="dest-station">🚉 Dest Station</option>
+                            <option value="dest-rail">🚂 Dest Rail</option>
+                            <option value="dest-customs">🛃 Dest Customs</option>
+                            <option value="dest-border">🛂 Dest Border</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <button class="btn btn-primary" onclick="loadDocuments()">
+                    🔍 Load Documents
+                </button>
+
+                <div class="document-grid" id="documentsList">
+                    <p>Select a node to view documents</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Network Management Card -->
+        <div class="card">
+            <h2>🌐 Network Management</h2>
+            
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <button class="btn btn-primary" onclick="showNetworkStatus()">
+                    📊 Network Status
+                </button>
+                <button class="btn btn-primary" onclick="showAllDocuments()">
+                    📋 All Documents
+                </button>
+                <button class="btn btn-primary" onclick="exportDocuments()">
+                    📁 Export Data
+                </button>
+                <button class="btn btn-primary" onclick="showNodeMessages()">
+                    💬 Node Messages
+                </button>
+            </div>
+
+            <div id="managementOutput" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; display: none;">
+                <!-- Management output will be displayed here -->
+            </div>
+        </div>
+
+        <div id="notifications" class="notifications"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8081';
+        let currentViewingNode = null;
+        let allNodes = {};
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            checkNetworkStatus();
+            setupEventListeners();
+            loadNodes();
+            
+            // Auto-refresh
+            setInterval(checkNetworkStatus, 30000);
+        });
+
+        function setupEventListeners() {
+            // Document send form
+            document.getElementById('sendDocumentForm').addEventListener('submit', sendDocument);
+            
+            // Update allowed viewers when sender changes
+            document.querySelectorAll('input[name="senderNode"]').forEach(radio => {
+                radio.addEventListener('change', updateAllowedViewers);
+            });
+            
+            // Viewing node selection
+            document.getElementById('viewingNode').addEventListener('change', function() {
+                currentViewingNode = this.value;
+                if (currentViewingNode) {
+                    loadDocuments();
+                }
+            });
+        }
+
+        async function loadNodes() {
+            try {
+                const response = await fetch(`${API_URL}/nodes`);
+                const data = await response.json();
+                allNodes = data.nodes.reduce((acc, node) => {
+                    acc[node.id] = node;
+                    return acc;
+                }, {});
+            } catch (error) {
+                console.error('Failed to load nodes:', error);
+            }
+        }
+
+        function updateAllowedViewers() {
+            const senderNode = document.querySelector('input[name="senderNode"]:checked')?.value;
+            if (!senderNode) return;
+            
+            const senderFaction = senderNode.startsWith('origin') ? 'origin' : 'dest';
+            const allowedViewersDiv = document.getElementById('allowedViewers');
+            
+            // Get nodes from same faction
+            const sameFactionNodes = Object.keys(allNodes).filter(nodeId => 
+                allNodes[nodeId].faction === senderFaction && nodeId !== senderNode
+            );
+            
+            allowedViewersDiv.innerHTML = sameFactionNodes.map(nodeId => `
+                <div class="checkbox-item">
+                    <input type="checkbox" id="viewer-${nodeId}" value="${nodeId}">
+                    <label for="viewer-${nodeId}">${allNodes[nodeId].icon} ${allNodes[nodeId].name}</label>
+                </div>
+            `).join('');
+        }
+
+        async function sendDocument(e) {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            const file = document.getElementById('documentFile').files[0];
+            const senderNode = document.querySelector('input[name="senderNode"]:checked')?.value;
+            const recipientNode = document.querySelector('input[name="recipientNode"]:checked')?.value;
+            
+            if (!file || !senderNode || !recipientNode) {
+                showNotification('Please fill all required fields', 'error');
+                return;
+            }
+            
+            // Get allowed viewers
+            const allowedViewers = Array.from(document.querySelectorAll('#allowedViewers input:checked'))
+                .map(cb => cb.value);
+            
+            formData.append('file', file);
+            formData.append('allowedViewers', JSON.stringify(allowedViewers));
+            
+            try {
+                showNotification('Sending document...', 'info');
+                
+                const response = await fetch(`${API_URL}/nodes/${senderNode}/send-to/${recipientNode}`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showNotification(`Document sent successfully! ID: ${result.docID}`, 'success');
+                    document.getElementById('sendDocumentForm').reset();
+                    updateAllowedViewers(); // Clear allowed viewers
+                    
+                    // Refresh documents if viewing
+                    if (currentViewingNode) {
+                        loadDocuments();
+                    }
+                } else {
+                    showNotification(`Error: ${result.error}`, 'error');
+                }
+                
+            } catch (error) {
+                showNotification(`Network error: ${error.message}`, 'error');
+            }
+        }
+
+        async function loadDocuments() {
+            const nodeId = document.getElementById('viewingNode').value;
+            if (!nodeId) return;
+            
+            try {
+                const response = await fetch(`${API_URL}/nodes/${nodeId}/documents`);
+                const data = await response.json();
+                
+                const documentsList = document.getElementById('documentsList');
+                
+                if (data.documents && data.documents.length > 0) {
+                    documentsList.innerHTML = data.documents.map(doc => `
+                        <div class="document-card ${doc.status}">
+                            <div class="document-header">
+                                <h4>📄 ${doc.fileName}</h4>
+                                <span class="status-badge status-${doc.status}">${doc.status}</span>
+                            </div>
+                            <div>
+                                <strong>From:</strong> ${allNodes[doc.senderNode]?.name || doc.senderNode}<br>
+                                <strong>To:</strong> ${allNodes[doc.recipientNode]?.name || doc.recipientNode}<br>
+                                <strong>Time:</strong> ${new Date(doc.timestamp).toLocaleString()}<br>
+                                ${doc.ipfsHash === 'RESTRICTED' ? 
+                                    '<em style="color: #666;">Limited access - metadata only</em>' : 
+                                    '<strong>Full access granted</strong>'
+                                }
+                            </div>
+                            <div class="document-actions">
+                                <button class="action-btn view-btn" onclick="viewDocument('${doc.docID}', '${nodeId}')">
+                                    👁️ View
+                                </button>
+                                ${(doc.recipientNode === nodeId && doc.status === 'pending') ? `
+                                    <button class="action-btn approve-btn" onclick="approveDocument('${doc.docID}', '${nodeId}')">
+                                        ✅ Approve
+                                    </button>
+                                    <button class="action-btn reject-btn" onclick="rejectDocument('${doc.docID}', '${nodeId}')">
+                                        ❌ Reject
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    documentsList.innerHTML = '<p>No documents found for this node</p>';
+                }
+                
+            } catch (error) {
+                showNotification(`Error loading documents: ${error.message}`, 'error');
+            }
+        }
+
+        async function viewDocument(docId, nodeId) {
+            try {
+                const response = await fetch(`${API_URL}/nodes/${nodeId}/documents/${docId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const doc = data.document;
+                    const accessLevel = data.hasFullAccess ? 'Full Access' : 'Limited Access (Metadata Only)';
+                    
+                    const popup = window.open('', '_blank', 'width=600,height=500');
+                    popup.document.write(`
+                        <html>
+                        <head>
+                            <title>Document View - ${doc.fileName}</title>
+                            <style>
+                                body { font-family: Arial, sans-serif; padding: 20px; }
+                                .header { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+                                .content { background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+                                .restricted { color: #666; font-style: italic; }
+                                .status-${doc.status} { color: ${doc.status === 'approved' ? '#28a745' : doc.status === 'rejected' ? '#dc3545' : '#856404'}; }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="header">
+                                <h2>📄 ${doc.fileName}</h2>
+                                <p><strong>Access Level:</strong> ${accessLevel}</p>
+                            </div>
+                            <div class="content">
+                                <p><strong>Document ID:</strong> ${doc.docID}</p>
+                                <p><strong>Sender:</strong> ${allNodes[doc.senderNode]?.name || doc.senderNode}</p>
+                                <p><strong>Recipient:</strong> ${allNodes[doc.recipientNode]?.name || doc.recipientNode}</p>
+                                <p><strong>Status:</strong> <span class="status-${doc.status}">${doc.status.toUpperCase()}</span></p>
+                                <p><strong>Timestamp:</strong> ${new Date(doc.timestamp).toLocaleString()}</p>
+                                ${doc.ipfsHash !== 'RESTRICTED' ? 
+                                    `<p><strong>IPFS Hash:</strong> ${doc.ipfsHash}</p>` : 
+                                    '<p class="restricted">Content access restricted for this node</p>'
+                                }
+                                ${doc.rejectionReason ? 
+                                    `<p><strong>Rejection Reason:</strong> ${doc.rejectionReason}</p>` : ''
+                                }
+                            </div>
+                        </body>
+                        </html>
+                    `);
+                } else {
+                    showNotification('Access denied or document not found', 'error');
+                }
+                
+            } catch (error) {
+                showNotification(`Error viewing document: ${error.message}`, 'error');
+            }
+        }
+
+        async function approveDocument(docId, nodeId) {
+            const message = prompt('Enter approval message (optional):') || 'Document approved';
+            
+            if (confirm(`Approve document ${docId}?`)) {
+                try {
+                    const response = await fetch(`${API_URL}/nodes/${nodeId}/approve/${docId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: message })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        showNotification('Document approved successfully!', 'success');
+                        loadDocuments(); // Refresh list
+                    } else {
+                        showNotification(`Error: ${result.error}`, 'error');
+                    }
+                    
+                } catch (error) {
+                    showNotification(`Error approving document: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        async function rejectDocument(docId, nodeId) {
+            const reason = prompt('Enter rejection reason:');
+            
+            if (!reason || reason.trim() === '') {
+                showNotification('Rejection reason is required', 'error');
+                return;
+            }
+            
+            if (confirm(`Reject document ${docId}?`)) {
+                try {
+                    const response = await fetch(`${API_URL}/nodes/${nodeId}/reject/${docId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ reason: reason })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        showNotification('Document rejected successfully!', 'success');
+                        loadDocuments(); // Refresh list
+                    } else {
+                        showNotification(`Error: ${result.error}`, 'error');
+                    }
+                    
+                } catch (error) {
+                    showNotification(`Error rejecting document: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        async function checkNetworkStatus() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                
+                const statusElement = document.getElementById('networkStatus');
+                
+                if (data.status === 'OK') {
+                    statusElement.className = 'status-indicator';
+                    statusElement.innerHTML = '● Connected';
+                    statusElement.style.background = '#d4edda';
+                    statusElement.style.color = '#155724';
+                } else {
+                    statusElement.className = 'status-indicator';
+                    statusElement.innerHTML = '● Disconnected';
+                    statusElement.style.background = '#f8d7da';
+                    statusElement.style.color = '#721c24';
+                }
+            } catch (error) {
+                document.getElementById('networkStatus').innerHTML = '● Error';
+            }
+        }
+
+        // Network Management Functions
+        async function showNetworkStatus() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                
+                const output = document.getElementById('managementOutput');
+                output.innerHTML = `
+                    <h3>📊 Network Status</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+                output.style.display = 'block';
+            } catch (error) {
+                showNotification('Error loading network status', 'error');
+            }
+        }
+
+        async function showAllDocuments() {
+            // Implementation for showing all documents across all nodes
+            showNotification('Loading all documents...', 'info');
+            
+            const output = document.getElementById('managementOutput');
+            output.innerHTML = `
+                <h3>📋 All Documents (Across All Nodes)</h3>
+                <p>Feature coming soon - will show documents from all nodes with appropriate access controls</p>
+            `;
+            output.style.display = 'block';
+        }
+
+        function exportDocuments() {
+            showNotification('Exporting documents...', 'info');
+            // Implementation for exporting documents
+        }
+
+        async function showNodeMessages() {
+            if (!currentViewingNode) {
+                showNotification('Please select a viewing node first', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/nodes/${currentViewingNode}/messages`);
+                const data = await response.json();
+                
+                const output = document.getElementById('managementOutput');
+                output.innerHTML = `
+                    <h3>💬 Messages for ${allNodes[currentViewingNode]?.name}</h3>
+                    ${data.messages.length > 0 ? 
+                        data.messages.map(msg => `
+                            <div style="background: white; padding: 10px; margin: 10px 0; border-radius: 4px; border-left: 3px solid ${msg.type === 'approval' ? '#28a745' : '#dc3545'};">
+                                <strong>From:</strong> ${allNodes[msg.from]?.name || msg.from}<br>
+                                <strong>Type:</strong> ${msg.type}<br>
+                                <strong>Message:</strong> ${msg.message}<br>
+                                <strong>Time:</strong> ${new Date(msg.timestamp).toLocaleString()}
+                            </div>
+                        `).join('') : 
+                        '<p>No messages found</p>'
+                    }
+                `;
+                output.style.display = 'block';
+            } catch (error) {
+                showNotification('Error loading messages', 'error');
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <strong>${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}</strong>
+                ${message}
+            `;
+            
+            document.getElementById('notifications').appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

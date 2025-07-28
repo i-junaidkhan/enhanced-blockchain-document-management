@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Working File Upload Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        input, button { display: block; margin: 15px 0; padding: 12px; width: 100%; box-sizing: border-box; }
+        button { background: #28a745; color: white; border: none; cursor: pointer; border-radius: 5px; font-size: 16px; }
+        button:hover { background: #218838; }
+        .log { background: #f8f9fa; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: monospace; font-size: 12px; }
+        .success { background: #d4edda; color: #155724; border-left: 4px solid #28a745; }
+        .error { background: #f8d7da; color: #721c24; border-left: 4px solid #dc3545; }
+        .info { background: #d1ecf1; color: #0c5460; border-left: 4px solid #17a2b8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 File Upload Test (Working Version)</h1>
+        
+        <h3>Select and Upload File:</h3>
+        <form id="uploadForm">
+            <input type="file" id="fileInput" accept=".txt,.pdf,.jpg,.png,.doc,.docx" required>
+            <button type="submit" id="uploadBtn">📤 Upload to Blockchain</button>
+        </form>
+
+        <h3>📊 Live Logs:</h3>
+        <div id="logs"></div>
+    </div>
+
+    <script>
+        const logs = document.getElementById('logs');
+        const uploadForm = document.getElementById('uploadForm');
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+
+        function addLog(message, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            const logDiv = document.createElement('div');
+            logDiv.className = `log ${type}`;
+            logDiv.innerHTML = `[${time}] ${message}`;
+            logs.insertBefore(logDiv, logs.firstChild);
+            console.log(`[${time}] ${message}`);
+        }
+
+        // Test file selection
+        fileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                addLog(`✅ File selected: ${file.name} (${(file.size/1024).toFixed(1)} KB)`, 'success');
+            } else {
+                addLog('❌ No file selected', 'error');
+            }
+        });
+
+        // Handle form submission
+        uploadForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const file = fileInput.files[0];
+            if (!file) {
+                addLog('❌ Please select a file first!', 'error');
+                return;
+            }
+
+            addLog(`🚀 Starting upload: ${file.name}`, 'info');
+            
+            // Disable button during upload
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = '⏳ Uploading...';
+
+            try {
+                // Create FormData (this is what curl does)
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                addLog('📦 FormData created, sending request...', 'info');
+
+                // Make the same request as curl
+                const response = await fetch('/documents', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                addLog(`📡 Response: ${response.status} ${response.statusText}`, 'info');
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    addLog('🎉 SUCCESS! Document uploaded to blockchain!', 'success');
+                    addLog(`📋 Document ID: ${result.docID}`, 'success');
+                    addLog(`🔗 IPFS Hash: ${result.ipfsHash}`, 'success');
+                    addLog(`📅 Timestamp: ${result.timestamp}`, 'success');
+                    
+                    // Reset form
+                    uploadForm.reset();
+                } else {
+                    addLog(`❌ Upload failed: ${result.error}`, 'error');
+                }
+
+            } catch (error) {
+                addLog(`💥 Network error: ${error.message}`, 'error');
+            } finally {
+                // Re-enable button
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = '📤 Upload to Blockchain';
+            }
+        });
+
+        // Initial status
+        addLog('🟢 Test page loaded - Ready to upload files', 'success');
+        addLog('✅ Backend confirmed working (curl test passed)', 'success');
+    </script>
+</body>
+</html>

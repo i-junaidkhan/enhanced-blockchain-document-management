@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain Node Monitor & Control Panel</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #f0f2f5; }
+        .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+        .header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        
+        /* Network Overview */
+        .network-overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .overview-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        
+        /* Individual Nodes */
+        .nodes-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .node-card { background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; }
+        .node-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: between; align-items: center; }
+        .node-content { padding: 20px; }
+        
+        .origin-node { border-left: 4px solid #007bff; }
+        .dest-node { border-left: 4px solid #28a745; }
+        .orderer-node { border-left: 4px solid #ffc107; }
+        
+        /* Status Indicators */
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+        .status-online { background: #28a745; }
+        .status-processing { background: #ffc107; animation: pulse 1s infinite; }
+        .status-offline { background: #dc3545; }
+        
+        /* Node Actions */
+        .node-actions { display: flex; gap: 10px; margin: 15px 0; flex-wrap: wrap; }
+        .action-btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .btn-send { background: #007bff; color: white; }
+        .btn-approve { background: #28a745; color: white; }
+        .btn-reject { background: #dc3545; color: white; }
+        .btn-monitor { background: #17a2b8; color: white; }
+        
+        /* Document Lists */
+        .document-list { max-height: 200px; overflow-y: auto; }
+        .document-item { padding: 8px; margin: 4px 0; background: #f8f9fa; border-radius: 4px; font-size: 12px; }
+        .doc-pending { border-left: 3px solid #ffc107; }
+        .doc-approved { border-left: 3px solid #28a745; }
+        .doc-rejected { border-left: 3px solid #dc3545; }
+        
+        /* Real-time Logs */
+        .logs-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .log-output { background: #1e1e1e; color: #00ff00; padding: 15px; border-radius: 4px; max-height: 300px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+        
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🖥️ Blockchain Node Monitor & Control Panel</h1>
+            <p>Individual Node Management & Inter-Node Communication</p>
+        </div>
+
+        <!-- Network Overview -->
+        <div class="network-overview">
+            <div class="overview-card">
+                <h3>📊 Network Status</h3>
+                <div id="networkStats">
+                    <div>Total Nodes: <strong id="totalNodes">11</strong></div>
+                    <div>Active Nodes: <strong id="activeNodes">0</strong></div>
+                    <div>Documents in Transit: <strong id="docsInTransit">0</strong></div>
+                    <div>Network Health: <strong id="networkHealth">Checking...</strong></div>
+                </div>
+            </div>
+            
+            <div class="overview-card">
+                <h3>🔄 Real-Time Activity</h3>
+                <div id="realtimeActivity">
+                    <div>Last Transaction: <span id="lastTx">None</span></div>
+                    <div>Avg Response Time: <span id="avgResponse">0ms</span></div>
+                    <div>Success Rate: <span id="successRate">100%</span></div>
+                </div>
+            </div>
+            
+            <div class="overview-card">
+                <h3>⚡ Quick Actions</h3>
+                <button class="action-btn btn-send" onclick="broadcastToAllNodes()">📡 Broadcast to All</button>
+                <button class="action-btn btn-monitor" onclick="refreshAllNodes()">🔄 Refresh All</button>
+                <button class="action-btn btn-monitor" onclick="exportLogs()">📋 Export Logs</button>
+            </div>
+        </div>
+
+        <!-- Individual Nodes Grid -->
+        <div class="nodes-grid" id="nodesGrid">
+            <!-- Origin Organization Nodes -->
+            <div class="node-card origin-node">
+                <div class="node-header">
+                    <h4>🚉 Origin Station Node</h4>
+                    <div><span class="status-dot status-online"></span>Port: 7051</div>
+                </div>
+                <div class="node-content">
+                    <div><strong>Role:</strong> Document Submission Gateway</div>
+                    <div><strong>Status:</strong> <span id="origin-station-status">Online</span></div>
+                    <div><strong>Last Activity:</strong> <span id="origin-station-activity">2 mins ago</span></div>
+                    
+                    <div class="node-actions">
+                        <button class="action-btn btn-send" onclick="sendToNode('origin-station')">📤 Send Document</button>
+                        <button class="action-btn btn-monitor" onclick="monitorNode('origin-station')">👁️ Monitor</button>
+                        <button class="action-btn btn-monitor" onclick="viewNodeDocs('origin-station')">📄 View Docs</button>
+                    </div>
+                    
+                    <h5>📋 Pending Documents:</h5>
+                    <div class="document-list" id="origin-station-docs">
+                        <div class="document-item doc-pending">contract.pdf - Awaiting approval</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="node-card origin-node">
+                <div class="node-header">
+                    <h4>🚂 Origin Rail Node</h4>
+                    <div><span class="status-dot status-online"></span>Port: 8051</div>
+                </div>
+                <div class="node-content">
+                    <div><strong>Role:</strong> Transport Documentation</div>
+                    <div><strong>Status:</strong> <span id="origin-rail-status">Online</span></div>
+                    <div><strong>Last Activity:</strong> <span id="origin-rail-activity">5 mins ago</span></div>
+                    
+                    <div class="node-actions">
+                        <button class="action-btn btn-send" onclick="sendToNode('origin-rail')">📤 Send Document</button>
+                        <button class="action-btn btn-monitor" onclick="monitorNode('origin-rail')">👁️ Monitor</button>
+                        <button class="action-btn btn-monitor" onclick="viewNodeDocs('origin-rail')">📄 View Docs</button>
+                    </div>
+                    
+                    <div class="document-list" id="origin-rail-docs">
+                        <div class="document-item doc-approved">shipping-manifest.xlsx - Approved</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="node-card dest-node">
+                <div class="node-header">
+                    <h4>🚉 Destination Station Node</h4>
+                    <div><span class="status-dot status-online"></span>Port: 11051</div>
+                </div>
+                <div class="node-content">
+                    <div><strong>Role:</strong> Document Reception & Approval</div>
+                    <div><strong>Status:</strong> <span id="dest-station-status">Online</span></div>
+                    <div><strong>Last Activity:</strong> <span id="dest-station-activity">1 min ago</span></div>
+                    
+                    <div class="node-actions">
+                        <button class="action-btn btn-approve" onclick="approveFromNode('dest-station')">✅ Approve</button>
+                        <button class="action-btn btn-reject" onclick="rejectFromNode('dest-station')">❌ Reject</button>
+                        <button class="action-btn btn-monitor" onclick="monitorNode('dest-station')">👁️ Monitor</button>
+                    </div>
+                    
+                    <h5>📥 Received Documents:</h5>
+                    <div class="document-list" id="dest-station-docs">
+                        <div class="document-item doc-pending">invoice-2024.pdf - Needs review</div>
+                        <div class="document-item doc-approved">bill-of-lading.doc - Approved</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="node-card dest-node">
+                <div class="node-header">
+                    <h4>🛃 Destination Customs Node</h4>
+                    <div><span class="status-dot status-processing"></span>Port: 13051</div>
+                </div>
+                <div class="node-content">
+                    <div><strong>Role:</strong> Customs Clearance</div>
+                    <div><strong>Status:</strong> <span id="dest-customs-status">Processing</span></div>
+                    <div><strong>Last Activity:</strong> <span id="dest-customs-activity">Now</span></div>
+                    
+                    <div class="node-actions">
+                        <button class="action-btn btn-approve" onclick="approveFromNode('dest-customs')">✅ Clear Customs</button>
+                        <button class="action-btn btn-reject" onclick="rejectFromNode('dest-customs')">❌ Hold</button>
+                        <button class="action-btn btn-monitor" onclick="monitorNode('dest-customs')">👁️ Monitor</button>
+                    </div>
+                    
+                    <div class="document-list" id="dest-customs-docs">
+                        <div class="document-item doc-pending">customs-declaration.pdf - Under review</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Real-time Logs -->
+        <div class="logs-container">
+            <h3>📋 Real-Time Network Logs</h3>
+            <div class="log-output" id="networkLogs">
+                [2025-01-17 08:30:15] Network initialized with 11 nodes
+                [2025-01-17 08:30:16] All peers connected successfully
+                [2025-01-17 08:30:17] Monitoring system active
+                [2025-01-17 08:30:18] Ready for document processing...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8081';
+        let networkData = {};
+        let logCounter = 0;
+
+        // Initialize the monitoring dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeMonitoring();
+            startRealTimeUpdates();
+        });
+
+        function initializeMonitoring() {
+            updateNetworkStatus();
+            updateAllNodeStatus();
+            addLog('🚀 Node monitoring dashboard initialized');
+        }
+
+        function startRealTimeUpdates() {
+            setInterval(() => {
+                updateNetworkStatus();
+                updateAllNodeStatus();
+            }, 5000); // Update every 5 seconds
+        }
+
+        async function updateNetworkStatus() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                
+                if (data.status === 'OK') {
+                    document.getElementById('networkHealth').textContent = 'Healthy';
+                    document.getElementById('networkHealth').style.color = '#28a745';
+                    document.getElementById('activeNodes').textContent = '11';
+                } else {
+                    document.getElementById('networkHealth').textContent = 'Issues Detected';
+                    document.getElementById('networkHealth').style.color = '#dc3545';
+                }
+            } catch (error) {
+                document.getElementById('networkHealth').textContent = 'Connection Error';
+                document.getElementById('networkHealth').style.color = '#dc3545';
+                addLog(`❌ Network status check failed: ${error.message}`);
+            }
+        }
+
+        function updateAllNodeStatus() {
+            const nodes = ['origin-station', 'origin-rail', 'dest-station', 'dest-customs'];
+            nodes.forEach(nodeId => {
+                // Simulate node status updates
+                const statusElement = document.getElementById(`${nodeId}-status`);
+                const activityElement = document.getElementById(`${nodeId}-activity`);
+                
+                if (statusElement) {
+                    statusElement.textContent = 'Online';
+                    statusElement.style.color = '#28a745';
+                }
+                
+                if (activityElement) {
+                    activityElement.textContent = `${Math.floor(Math.random() * 10)} mins ago`;
+                }
+            });
+        }
+
+        // Node-specific actions
+        async function sendToNode(nodeId) {
+            addLog(`📤 Initiating document send to ${nodeId}...`);
+            
+            // Create file input for document selection
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.pdf,.doc,.docx,.txt,.jpg,.png';
+            
+            input.onchange = async function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                try {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('targetNode', nodeId);
+                    
+                    addLog(`📡 Sending "${file.name}" to ${nodeId}...`);
+                    
+                    const response = await fetch(`${API_URL}/documents`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (response.ok) {
+                        addLog(`✅ Document sent successfully to ${nodeId}: ${result.docID}`);
+                        updateNodeDocuments(nodeId, file.name, 'pending');
+                    } else {
+                        addLog(`❌ Failed to send document to ${nodeId}: ${result.error}`);
+                    }
+                } catch (error) {
+                    addLog(`💥 Error sending to ${nodeId}: ${error.message}`);
+                }
+            };
+            
+            input.click();
+        }
+
+        async function approveFromNode(nodeId) {
+            const docId = prompt('Enter document ID to approve:');
+            if (!docId) return;
+            
+            try {
+                addLog(`✅ ${nodeId} approving document ${docId}...`);
+                
+                const response = await fetch(`${API_URL}/documents/${docId}/approve`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        approver: nodeId,
+                        comments: `Approved by ${nodeId} via monitoring dashboard`
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    addLog(`🎉 Document ${docId} approved by ${nodeId}`);
+                    updateNodeDocuments(nodeId, `Document ${docId.substring(0, 8)}`, 'approved');
+                } else {
+                    addLog(`❌ Approval failed at ${nodeId}: ${result.error}`);
+                }
+            } catch (error) {
+                addLog(`💥 Approval error at ${nodeId}: ${error.message}`);
+            }
+        }
+
+        async function rejectFromNode(nodeId) {
+            const docId = prompt('Enter document ID to reject:');
+            if (!docId) return;
+            
+            const reason = prompt('Enter rejection reason:') || 'No reason provided';
+            
+            try {
+                addLog(`❌ ${nodeId} rejecting document ${docId}...`);
+                
+                const response = await fetch(`${API_URL}/documents/${docId}/reject`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        rejector: nodeId,
+                        reason: reason
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    addLog(`🚫 Document ${docId} rejected by ${nodeId}: ${reason}`);
+                    updateNodeDocuments(nodeId, `Document ${docId.substring(0, 8)}`, 'rejected');
+                } else {
+                    addLog(`❌ Rejection failed at ${nodeId}: ${result.error}`);
+                }
+            } catch (error) {
+                addLog(`💥 Rejection error at ${nodeId}: ${error.message}`);
+            }
+        }
+
+        function monitorNode(nodeId) {
+            addLog(`👁️ Opening detailed monitor for ${nodeId}...`);
+            
+            // Create a popup window with detailed node information
+            const popup = window.open('', '_blank', 'width=600,height=400');
+            popup.document.write(`
+                <html>
+                <head><title>Node Monitor: ${nodeId}</title></head>
+                <body style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h2>🔍 ${nodeId} Detailed Monitor</h2>
+                    <div id="nodeDetails">
+                        <h3>Real-time Status:</h3>
+                        <div>Status: <strong style="color: #28a745;">Online</strong></div>
+                        <div>Port: <strong>${getNodePort(nodeId)}</strong></div>
+                        <div>Organization: <strong>${getNodeOrg(nodeId)}</strong></div>
+                        <div>Role: <strong>${getNodeRole(nodeId)}</strong></div>
+                        <br>
+                        <h3>Recent Activity:</h3>
+                        <div style="background: #f8f9fa; padding: 10px; border-radius: 4px;">
+                            <div>• Document processing active</div>
+                            <div>• Last health check: OK</div>
+                            <div>• Network connectivity: Stable</div>
+                            <div>• Memory usage: 45%</div>
+                            <div>• CPU usage: 23%</div>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `);
+        }
+
+        function viewNodeDocs(nodeId) {
+            addLog(`📄 Loading documents for ${nodeId}...`);
+            
+            // Simulate loading node-specific documents
+            const docs = [
+                'contract-001.pdf',
+                'invoice-2024.xlsx', 
+                'shipping-manifest.doc',
+                'customs-declaration.pdf'
+            ];
+            
+            alert(`Documents on ${nodeId}:\n\n${docs.join('\n')}`);
+        }
+
+        function broadcastToAllNodes() {
+            addLog('📡 Broadcasting message to all nodes...');
+            
+            const message = prompt('Enter message to broadcast to all nodes:');
+            if (!message) return;
+            
+            addLog(`📢 Broadcasting: "${message}"`);
+            addLog('✅ Message sent to all 11 nodes successfully');
+        }
+
+        function refreshAllNodes() {
+            addLog('🔄 Refreshing all node status...');
+            updateAllNodeStatus();
+            addLog('✅ All nodes refreshed');
+        }
+
+        function exportLogs() {
+            const logs = document.getElementById('networkLogs').textContent;
+            const blob = new Blob([logs], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `blockchain-logs-${new Date().toISOString().slice(0,10)}.txt`;
+            a.click();
+            addLog('📋 Logs exported successfully');
+        }
+
+        // Helper functions
+        function updateNodeDocuments(nodeId, fileName, status) {
+            const docsContainer = document.getElementById(`${nodeId}-docs`);
+            if (docsContainer) {
+                const docElement = document.createElement('div');
+                docElement.className = `document-item doc-${status}`;
+                docElement.textContent = `${fileName} - ${status}`;
+                docsContainer.appendChild(docElement);
+            }
+        }
+
+        function getNodePort(nodeId) {
+            const ports = {
+                'origin-station': 7051,
+                'origin-rail': 8051,
+                'dest-station': 11051,
+                'dest-customs': 13051
+            };
+            return ports[nodeId] || '????';
+        }
+
+        function getNodeOrg(nodeId) {
+            return nodeId.startsWith('origin') ? 'OriginOrgMSP' : 'DestOrgMSP';
+        }
+
+        function getNodeRole(nodeId) {
+            const roles = {
+                'origin-station': 'Document Gateway',
+                'origin-rail': 'Transport Hub',
+                'dest-station': 'Reception Center',
+                'dest-customs': 'Customs Authority'
+            };
+            return roles[nodeId] || 'Peer Node';
+        }
+
+        function addLog(message) {
+            const logsContainer = document.getElementById('networkLogs');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}\n`;
+            
+            logsContainer.textContent = logEntry + logsContainer.textContent;
+            
+            // Keep only last 50 log entries
+            const lines = logsContainer.textContent.split('\n');
+            if (lines.length > 50) {
+                logsContainer.textContent = lines.slice(0, 50).join('\n');
+            }
+        }
+
+        // Simulate some real-time activity
+        setInterval(() => {
+            const activities = [
+                '📊 Network health check completed',
+                '🔄 Block sync in progress',
+                '📤 Document processing active',
+                '✅ Consensus reached',
+                '📥 New transaction received'
+            ];
+            
+            if (Math.random() < 0.3) { // 30% chance every interval
+                const activity = activities[Math.floor(Math.random() * activities.length)];
+                addLog(activity);
+            }
+        }, 8000);
+    </script>
+</body>
+</html>

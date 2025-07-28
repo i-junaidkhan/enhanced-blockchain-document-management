@@ -26,7 +26,7 @@
         "peer0.org1.example.com": {
             "url": "grpcs://localhost:7051",
             "tlsCACerts": {
-                "pem": "-----BEGIN CERTIFICATE-----\nMIICFzCCAb2gAwIBAgIUVdX6fMuuKU02tqSID2PlAgoaK/cwCgYIKoZIzj0EAwIw\naDELMAkGA1UEBhMCVVMxFzAVBgNVBAgTDk5vcnRoIENhcm9saW5hMRQwEgYDVQQK\nEwtIeXBlcmxlZGdlcjEPMA0GA1UECxMGRmFicmljMRkwFwYDVQQDExBmYWJyaWMt\nY2Etc2VydmVyMB4XDTIzMDkzMDE1NTQwMFoXDTM4MDkyNjE1NTQwMFowaDELMAkG\nA1UEBhMCVVMxFzAVBgNVBAgTDk5vcnRoIENhcm9saW5hMRQwEgYDVQQKEwtIeXBl\ncmxlZGdlcjEPMA0GA1UECxMGRmFicmljMRkwFwYDVQQDExBmYWJyaWMtY2Etc2Vy\ndmVyMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE8WIqvNg/C2SC6zqczv4XEf8A\nPNeZLPWYXRA61+xdIAR/muKVGL36wOjsL8XFCc6HGbi/RnXfRRkKHpPCG5ai+qNF\nMEMwDgYDVR0PAQH/BAQDAgEGMBIGA1UdEwEB/wQIMAYBAf8CAQEwHQYDVR0OBBYE\nFIf8Qf73sxmLpWacf3nyQSQF7azCMAoGCCqGSM49BAMCA0gAMEUCIQDuJ7DOhs/o\nz8SNbC0T9QfqLvbCEXk6OSiO3bQ8HvJXJwIgebO2jBOhfpzzytRc/P64QOwJPzOG\nWBxQ3YbGFBY9m0s=\n-----END CERTIFICATE-----\n"
+                "pem": ""
             },
             "grpcOptions": {
                 "ssl-target-name-override": "peer0.org1.example.com",
@@ -41,7 +41,7 @@
             "url": "https://localhost:7054",
             "caName": "ca.org1.example.com",
             "tlsCACerts": {
-                "pem": "-----BEGIN CERTIFICATE-----\nMIICFzCCAb2gAwIBAgIUVdX6fMuuKU02tqSID2PlAgoaK/cwCgYIKoZIzj0EAwIw\naDELMAkGA1UEBhMCVVMxFzAVBgNVBAgTDk5vcnRoIENhcm9saW5hMRQwEgYDVQQK\nEwtIeXBlcmxlZGdlcjEPMA0GA1UECxMGRmFicmljMRkwFwYDVQQDExBmYWJyaWMt\nY2Etc2VydmVyMB4XDTIzMDkzMDE1NTQwMFoXDTM4MDkyNjE1NTQwMFowaDELMAkG\nA1UEBhMCVVMxFzAVBgNVBAgTDk5vcnRoIENhcm9saW5hMRQwEgYDVQQKEwtIeXBl\ncmxlZGdlcjEPMA0GA1UECxMGRmFicmljMRkwFwYDVQQDExBmYWJyaWMtY2Etc2Vy\ndmVyMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE8WIqvNg/C2SC6zqczv4XEf8A\nPNeZLPWYXRA61+xdIAR/muKVGL36wOjsL8XFCc6HGbi/RnXfRRkKHpPCG5ai+qNF\nMEMwDgYDVR0PAQH/BAQDAgEGMBIGA1UdEwEB/wQIMAYBAf8CAQEwHQYDVR0OBBYE\nFIf8Qf73sxmLpWacf3nyQSQF7azCMAoGCCqGSM49BAMCA0gAMEUCIQDuJ7DOhs/o\nz8SNbC0T9QfqLvbCEXk6OSiO3bQ8HvJXJwIgebO2jBOhfpzzytRc/P64QOwJPzOG\nWBxQ3YbGFBY9m0s=\n-----END CERTIFICATE-----\n"
+                "pem": ""
             },
             "httpOptions": {
                 "verify": false

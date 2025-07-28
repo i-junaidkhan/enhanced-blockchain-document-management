@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Upload Test</title>
+    <style>
+        body { padding: 20px; font-family: Arial, sans-serif; }
+        .box { border: 2px solid #ddd; padding: 20px; margin: 10px 0; border-radius: 5px; }
+        input, button { padding: 10px; margin: 5px 0; font-size: 16px; }
+        button { background: #007bff; color: white; border: none; cursor: pointer; border-radius: 3px; }
+        .log { background: #f5f5f5; padding: 10px; margin: 5px 0; border-radius: 3px; font-family: monospace; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Simple Upload Test</h1>
+    
+    <div class="box">
+        <h3>Step 1: Test File Selection</h3>
+        <input type="file" id="testFile" onchange="fileSelected()">
+        <div id="fileStatus">No file selected</div>
+    </div>
+
+    <div class="box">
+        <h3>Step 2: Manual Upload Test</h3>
+        <button onclick="uploadFile()" id="uploadBtn" disabled>Upload Selected File</button>
+    </div>
+
+    <div class="box">
+        <h3>Debug Logs:</h3>
+        <div id="logs"></div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+
+        function log(message, type = '') {
+            const time = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.innerHTML = `[${time}] ${message}`;
+            document.getElementById('logs').appendChild(div);
+            console.log(`[${time}] ${message}`);
+        }
+
+        function fileSelected() {
+            const fileInput = document.getElementById('testFile');
+            const fileStatus = document.getElementById('fileStatus');
+            const uploadBtn = document.getElementById('uploadBtn');
+            
+            if (fileInput.files.length > 0) {
+                selectedFile = fileInput.files[0];
+                fileStatus.innerHTML = `✅ Selected: <strong>${selectedFile.name}</strong> (${Math.round(selectedFile.size/1024)} KB)`;
+                uploadBtn.disabled = false;
+                log(`File selected: ${selectedFile.name}`, 'success');
+            } else {
+                selectedFile = null;
+                fileStatus.innerHTML = 'No file selected';
+                uploadBtn.disabled = true;
+                log('No file selected', 'error');
+            }
+        }
+
+        async function uploadFile() {
+            if (!selectedFile) {
+                log('No file to upload!', 'error');
+                return;
+            }
+
+            log(`Starting upload: ${selectedFile.name}`, '');
+            
+            const uploadBtn = document.getElementById('uploadBtn');
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = 'Uploading...';
+
+            try {
+                // Create FormData exactly like curl does
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+                
+                log('FormData created, sending request...', '');
+
+                // Send to same endpoint that worked with curl
+                const response = await fetch('/documents', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                log(`Response: ${response.status} ${response.statusText}`, '');
+
+                if (response.ok) {
+                    const result = await response.json();
+                    log('🎉 SUCCESS! Upload completed!', 'success');
+                    log(`Document ID: ${result.docID}`, 'success');
+                    log(`IPFS Hash: ${result.ipfsHash}`, 'success');
+                } else {
+                    const error = await response.json();
+                    log(`Upload failed: ${error.error}`, 'error');
+                }
+
+            } catch (error) {
+                log(`Network error: ${error.message}`, 'error');
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = 'Upload Selected File';
+            }
+        }
+
+        // Test on page load
+        window.onload = function() {
+            log('Page loaded successfully', 'success');
+            log('Click "Choose Files" button to select a file', '');
+        };
+    </script>
+</body>
+</html>

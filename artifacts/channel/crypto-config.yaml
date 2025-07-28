@@ -1,60 +1,71 @@
 
+# ---------------------------------------------------------------------------
+# "OrdererOrgs" - Definition of the ordering service organization
+# ---------------------------------------------------------------------------
 OrdererOrgs:
-  # ---------------------------------------------------------------------------
-  # Orderer
-  # ---------------------------------------------------------------------------
   - Name: Orderer
-    Domain: example.com
+    Domain: logistics.com # A more relevant domain for the project
     EnableNodeOUs: true
-
-    # ---------------------------------------------------------------------------
-    # "Specs" - See PeerOrgs below for complete description
-    # ---------------------------------------------------------------------------
+    # Specs defines the list of ordering nodes.
     Specs:
-      - Hostname: orderer
+      - Hostname: orderer1
         SANS:
-            - "localhost"
-            - "127.0.0.1"
+          - "localhost"
       - Hostname: orderer2
         SANS:
           - "localhost"
-          - "127.0.0.1"
       - Hostname: orderer3
         SANS:
-            - "localhost"
-            - "127.0.0.1"
+          - "localhost"
 
 # ---------------------------------------------------------------------------
 # "PeerOrgs" - Definition of organizations managing peer nodes
 # ---------------------------------------------------------------------------
 PeerOrgs:
   # ---------------------------------------------------------------------------
-  # Org1
+  # Org1: The Origin Country Consortium
   # ---------------------------------------------------------------------------
-  - Name: Org1
-    Domain: org1.example.com
+  - Name: OriginOrg
+    Domain: origin.com # Domain for all entities in the origin country
     EnableNodeOUs: true
-
-    Template:
-      Count: 2
-      # Start: 5
-      # Hostname: {{.Prefix}}{{.Index}} # default
-      SANS:
-        - "localhost"
-
+    # We use "Specs" instead of "Template" to define specific hostnames for our peers.
+    Specs:
+      - Hostname: origin-station
+        SANS:
+          - "localhost"
+      - Hostname: origin-rail
+        SANS:
+          - "localhost"
+      - Hostname: origin-customs
+        SANS:
+          - "localhost"
+      - Hostname: origin-border
+        SANS:
+          - "localhost"
+    # The number of non-admin user identities to generate for this organization
     Users:
       Count: 1
 
-  - Name: Org2
-    Domain: org2.example.com
+  # ---------------------------------------------------------------------------
+  # Org2: The Destination Country Consortium
+  # ---------------------------------------------------------------------------
+  - Name: DestOrg
+    Domain: dest.com # Domain for all entities in the destination country
     EnableNodeOUs: true
-
-    Template:
-      Count: 2
-      # Start: 5
-      # Hostname: {{.Prefix}}{{.Index}} # default
-      SANS:
-        - "localhost"
-
+    # Defining the four specific peers for the destination country.
+    Specs:
+      - Hostname: dest-station
+        SANS:
+          - "localhost"
+      - Hostname: dest-rail
+        SANS:
+          - "localhost"
+      - Hostname: dest-customs
+        SANS:
+          - "localhost"
+      - Hostname: dest-border
+        SANS:
+          - "localhost"
+    # The number of non-admin user identities to generate for this organization
     Users:
       Count: 1

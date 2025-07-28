@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain Document Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .status-indicator {
+            background: #d4edda;
+            color: #155724;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+        
+        .section {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #34495e;
+        }
+        
+        /* Simple file input styling */
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: white;
+            cursor: pointer;
+        }
+        
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+        
+        .submit-btn {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.4);
+        }
+        
+        .submit-btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .file-info {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .documents-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .documents-table th,
+        .documents-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .documents-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .refresh-btn {
+            background: #3498db;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-right: 5px;
+        }
+        
+        .approve-btn { background: #27ae60; color: white; }
+        .reject-btn { background: #e74c3c; color: white; }
+        .download-btn { background: #3498db; color: white; }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-submitted { background: #fff3cd; color: #856404; }
+        .status-approved { background: #d4edda; color: #155724; }
+        .status-rejected { background: #f8d7da; color: #721c24; }
+        
+        .notifications {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .notification {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border-left: 4px solid #3498db;
+        }
+        
+        .notification.success { border-left-color: #27ae60; }
+        .notification.error { border-left-color: #e74c3c; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🔗 Blockchain Document Management</h1>
+            <div class="status-indicator" id="networkStatus">● Connected</div>
+        </header>
+
+        <div class="section">
+            <h2>📤 Submit New Document</h2>
+            <form id="documentForm">
+                <div class="form-group">
+                    <label for="fileInput">Choose Document File:</label>
+                    <input type="file" id="fileInput" 
+                           accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.zip,.csv,.xlsx,.xls" 
+                           required>
+                    <div id="fileInfo" class="file-info" style="display: none;"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="submitter">Your Name:</label>
+                    <input type="text" id="submitter" placeholder="Enter your name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">Description:</label>
+                    <textarea id="description" placeholder="Enter document description" rows="3"></textarea>
+                </div>
+                
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    📨 Submit Document to Blockchain
+                </button>
+            </form>
+        </div>
+
+        <div class="section">
+            <h2>📋 Document Registry</h2>
+            <button id="refreshBtn" class="refresh-btn">🔄 Refresh List</button>
+            
+            <table class="documents-table">
+                <thead>
+                    <tr>
+                        <th>Document ID</th>
+                        <th>File Name</th>
+                        <th>Status</th>
+                        <th>Owner</th>
+                        <th>Timestamp</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="documentsTableBody">
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: #7f8c8d;">
+                            📄 No documents submitted yet
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="notifications" class="notifications"></div>
+    </div>
+
+    <script>
+        console.log('🚀 Blockchain Document Management System Starting...');
+        
+        // Global variables
+        let documents = [];
+        const API_BASE_URL = 'http://localhost:8081';
+
+        // DOM elements
+        const documentForm = document.getElementById('documentForm');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const submitBtn = document.getElementById('submitBtn');
+        const documentsTableBody = document.getElementById('documentsTableBody');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const networkStatus = document.getElementById('networkStatus');
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📱 Page loaded, setting up event listeners...');
+            setupEventListeners();
+            checkNetworkStatus();
+            renderDocuments();
+        });
+
+        function setupEventListeners() {
+            console.log('🔧 Setting up event listeners...');
+            
+            // File input change event
+            fileInput.addEventListener('change', function(e) {
+                console.log('📁 File input changed');
+                const file = e.target.files[0];
+                
+                if (file) {
+                    console.log('✅ File selected:', {
+                        name: file.name,
+                        size: file.size,
+                        type: file.type
+                    });
+                    
+                    // Show file information
+                    const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
+                    fileInfo.innerHTML = `
+                        <strong>Selected:</strong> ${file.name}<br>
+                        <strong>Size:</strong> ${fileSizeMB} MB<br>
+                        <strong>Type:</strong> ${file.type || 'Unknown'}
+                    `;
+                    fileInfo.style.display = 'block';
+                    
+                    showNotification(`File "${file.name}" selected successfully!`, 'success');
+                } else {
+                    console.log('❌ No file selected');
+                    fileInfo.style.display = 'none';
+                }
+            });
+
+            // Form submission
+            documentForm.addEventListener('submit', function(e) {
+                console.log('📤 Form submitted');
+                handleDocumentSubmission(e);
+            });
+
+            // Refresh button
+            refreshBtn.addEventListener('click', function() {
+                console.log('🔄 Refresh button clicked');
+                renderDocuments();
+            });
+        }
+
+        async function handleDocumentSubmission(e) {
+            e.preventDefault();
+            console.log('🚀 Starting document submission...');
+            
+            const file = fileInput.files[0];
+            const submitter = document.getElementById('submitter').value;
+            const description = document.getElementById('description').value;
+            
+            if (!file) {
+                console.log('❌ No file selected');
+                showNotification('Please select a file to upload', 'error');
+                return;
+            }
+            
+            if (!submitter.trim()) {
+                console.log('❌ No submitter name');
+                showNotification('Please enter your name', 'error');
+                return;
+            }
+            
+            // Create form data
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            console.log('📦 FormData created with file:', file.name);
+            
+            // Update button state
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '⏳ Uploading to Blockchain...';
+            
+            try {
+                console.log('🌐 Sending POST request to:', `${API_BASE_URL}/documents`);
+                
+                const response = await fetch(`${API_BASE_URL}/documents`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                console.log('📡 Response received:', response.status, response.statusText);
+                
+                const result = await response.json();
+                console.log('📄 Response data:', result);
+                
+                if (response.ok) {
+                    console.log('✅ Document submitted successfully!');
+                    showNotification('Document submitted to blockchain successfully!', 'success');
+                    
+                    // Add to local documents array
+                    const newDocument = {
+                        docID: result.docID,
+                        fileName: result.fileName,
+                        ipfsHash: result.ipfsHash,
+                        timestamp: result.timestamp,
+                        owner: 'OriginOrgMSP',
+                        status: 'Submitted'
+                    };
+                    
+                    documents.unshift(newDocument);
+                    renderDocuments();
+                    
+                    // Reset form
+                    documentForm.reset();
+                    fileInfo.style.display = 'none';
+                    
+                } else {
+                    console.error('❌ Error response:', result);
+                    showNotification(result.error || 'Failed to submit document', 'error');
+                }
+                
+            } catch (error) {
+                console.error('💥 Network error:', error);
+                showNotification('Network error: ' + error.message, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '📨 Submit Document to Blockchain';
+            }
+        }
+
+        async function checkNetworkStatus() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                const result = await response.json();
+                
+                if (response.ok && result.status === 'OK') {
+                    networkStatus.innerHTML = '● Connected';
+                    networkStatus.style.background = '#d4edda';
+                    networkStatus.style.color = '#155724';
+                    console.log('🟢 Network status: Connected');
+                } else {
+                    networkStatus.innerHTML = '● Disconnected';
+                    networkStatus.style.background = '#f8d7da';
+                    networkStatus.style.color = '#721c24';
+                    console.log('🔴 Network status: Disconnected');
+                }
+            } catch (error) {
+                networkStatus.innerHTML = '● Disconnected';
+                networkStatus.style.background = '#f8d7da';
+                networkStatus.style.color = '#721c24';
+                console.log('💥 Network check error:', error);
+            }
+        }
+
+        function renderDocuments() {
+            console.log('🎨 Rendering documents, count:', documents.length);
+            
+            if (documents.length === 0) {
+                documentsTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: #7f8c8d;">
+                            📄 No documents submitted yet
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            documentsTableBody.innerHTML = documents.map(doc => `
+                <tr>
+                    <td><code>${doc.docID.substring(0, 8)}...</code></td>
+                    <td>${doc.fileName}</td>
+                    <td>
+                        <span class="status-badge status-${doc.status.toLowerCase()}">
+                            ${doc.status}
+                        </span>
+                    </td>
+                    <td>${doc.owner}</td>
+                    <td>${new Date(doc.timestamp).toLocaleString()}</td>
+                    <td>
+                        ${doc.status === 'Submitted' ? `
+                            <button class="action-btn approve-btn" onclick="approveDocument('${doc.docID}')">
+                                ✅ Approve
+                            </button>
+                            <button class="action-btn reject-btn" onclick="rejectDocument('${doc.docID}')">
+                                ❌ Reject
+                            </button>
+                        ` : ''}
+                        <button class="action-btn download-btn" onclick="downloadDocument('${doc.docID}')">
+                            📥 Download
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Global functions for buttons
+        window.approveDocument = async function(docID) {
+            if (!confirm('Approve this document?')) return;
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/documents/${docID}/approve`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        approver: 'Web Admin',
+                        comments: 'Approved via web interface'
+                    })
+                });
+                
+                if (response.ok) {
+                    showNotification('Document approved!', 'success');
+                    const docIndex = documents.findIndex(doc => doc.docID === docID);
+                    if (docIndex !== -1) {
+                        documents[docIndex].status = 'Approved';
+                        renderDocuments();
+                    }
+                } else {
+                    const result = await response.json();
+                    showNotification(result.error || 'Failed to approve', 'error');
+                }
+            } catch (error) {
+                showNotification('Network error', 'error');
+            }
+        }
+
+        window.rejectDocument = async function(docID) {
+            const reason = prompt('Reason for rejection:');
+            if (!reason) return;
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/documents/${docID}/reject`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        rejector: 'Web Admin',
+                        reason: reason
+                    })
+                });
+                
+                if (response.ok) {
+                    showNotification('Document rejected!', 'success');
+                    const docIndex = documents.findIndex(doc => doc.docID === docID);
+                    if (docIndex !== -1) {
+                        documents[docIndex].status = 'Rejected';
+                        renderDocuments();
+                    }
+                } else {
+                    const result = await response.json();
+                    showNotification(result.error || 'Failed to reject', 'error');
+                }
+            } catch (error) {
+                showNotification('Network error', 'error');
+            }
+        }
+
+        window.downloadDocument = async function(docID) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/documents/${docID}/download`);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `document_${docID.substring(0, 8)}.txt`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    showNotification('Document downloaded!', 'success');
+                } else {
+                    showNotification('Download failed', 'error');
+                }
+            } catch (error) {
+                showNotification('Download error', 'error');
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            console.log(`📢 Notification (${type}):`, message);
+            
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            
+            document.getElementById('notifications').appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+
+        // Auto-refresh network status
+        setInterval(checkNetworkStatus, 30000);
+        
+        console.log('✅ JavaScript initialization complete');
+    </script>
+</body>
+</html>

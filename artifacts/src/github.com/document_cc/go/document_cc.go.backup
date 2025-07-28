@@ -1,0 +1,158 @@
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"time"
+
+	"github.com/hyperledger/fabric-contract-api-go/contractapi"
+)
+
+// DocumentContract provides functions for managing a Document
+type DocumentContract struct {
+	contractapi.Contract
+}
+
+// Document defines the structure for a document asset.
+// The IPFS hash (CID) is stored to link to the off-chain document file.
+type Document struct {
+	DocID     string   `json:"docID"`
+	FileName  string   `json:"fileName"`
+	Owner     string   `json:"owner"`
+	Status    string   `json:"status"`    // e.g., "Submitted", "Approved", "Rejected"
+	IPFSHash  string   `json:"ipfsHash"`  // The Content ID (CID) from IPFS
+	Approvers []string `json:"approvers"` // List of MSP IDs that approved
+	Timestamp string   `json:"timestamp"`
+}
+
+// SubmitDocument is called to add a new document to the ledger.
+// The client application is responsible for first uploading the document to IPFS to get the ipfsHash.
+func (s *DocumentContract) SubmitDocument(ctx contractapi.TransactionContextInterface, docID string, fileName string, ipfsHash string) error {
+	// Check if the document already exists
+	exists, err := s.DocumentExists(ctx, docID)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return fmt.Errorf("the document %s already exists", docID)
+	}
+
+	// Get the identity of the submitter
+	ownerMSPID, err := ctx.GetClientIdentity().GetMSPID()
+	if err != nil {
+		return fmt.Errorf("failed to get client MSP ID: %v", err)
+	}
+
+	// Create the document asset
+	doc := Document{
+		DocID:     docID,
+		FileName:  fileName,
+		Owner:     ownerMSPID,
+		Status:    "Submitted",
+		IPFSHash:  ipfsHash,
+		Approvers: []string{},
+		Timestamp: time.Now().UTC().Format(time.RFC3339),
+	}
+
+	docJSON, err := json.Marshal(doc)
+	if err != nil {
+		return err
+	}
+
+	return ctx.GetStub().PutState(docID, docJSON)
+}
+
+// ApproveDocument updates the status of a document to "Approved".
+// It records the identity of the approver.
+func (s *DocumentContract) ApproveDocument(ctx contractapi.TransactionContextInterface, docID string) error {
+	doc, err := s.GetDocumentById(ctx, docID)
+	if err != nil {
+		return err
+	}
+
+	// Check if the document is in a state that can be approved
+	if doc.Status != "Submitted" {
+		return fmt.Errorf("document %s is not in 'Submitted' state and cannot be approved", docID)
+	}
+
+	// Get the identity of the approver
+	approverMSPID, err := ctx.GetClientIdentity().GetMSPID()
+	if err != nil {
+		return fmt.Errorf("failed to get client MSP ID: %v", err)
+	}
+
+	// Update the status and add the approver
+	doc.Status = "Approved"
+	doc.Approvers = append(doc.Approvers, approverMSPID)
+
+	docJSON, err := json.Marshal(doc)
+	if err != nil {
+		return err
+	}
+
+	return ctx.GetStub().PutState(docID, docJSON)
+}
+
+// RejectDocument updates the status of a document to "Rejected".
+func (s *DocumentContract) RejectDocument(ctx contractapi.TransactionContextInterface, docID string) error {
+	doc, err := s.GetDocumentById(ctx, docID)
+	if err != nil {
+		return err
+	}
+
+	// Check if the document is in a state that can be rejected
+	if doc.Status != "Submitted" {
+		return fmt.Errorf("document %s is not in 'Submitted' state and cannot be rejected", docID)
+	}
+
+	// Update the status
+	doc.Status = "Rejected"
+
+	docJSON, err := json.Marshal(doc)
+	if err != nil {
+		return err
+	}
+
+	return ctx.GetStub().PutState(docID, docJSON)
+}
+
+// GetDocumentById returns the document stored in the world state with given id.
+func (s *DocumentContract) GetDocumentById(ctx contractapi.TransactionContextInterface, docID string) (*Document, error) {
+	docJSON, err := ctx.GetStub().GetState(docID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read from world state: %v", err)
+	}
+	if docJSON == nil {
+		return nil, fmt.Errorf("the document %s does not exist", docID)
+	}
+
+	var doc Document
+	err = json.Unmarshal(docJSON, &doc)
+	if err != nil {
+		return nil, err
+	}
+
+	return &doc, nil
+}
+
+// DocumentExists returns true when document with given ID exists in world state
+func (s *DocumentContract) DocumentExists(ctx contractapi.TransactionContextInterface, docID string) (bool, error) {
+	docJSON, err := ctx.GetStub().GetState(docID)
+	if err != nil {
+		return false, fmt.Errorf("failed to read from world state: %v", err)
+	}
+
+	return docJSON != nil, nil
+}
+
+func main() {
+	chaincode, err := contractapi.NewChaincode(new(DocumentContract))
+	if err != nil {
+		fmt.Printf("Error creating document chaincode: %s", err.Error())
+		return
+	}
+
+	if err := chaincode.Start(); err != nil {
+		fmt.Printf("Error starting document chaincode: %s", err.Error())
+	}
+}

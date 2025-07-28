@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Minimal File Test</title>
+</head>
+<body>
+    <h1>Minimal File Input Test</h1>
+    
+    <p>Click the button below. It should open a file selection dialog:</p>
+    
+    <input type="file" id="fileTest" style="font-size: 20px; padding: 10px;">
+    
+    <p id="result">No file selected</p>
+    
+    <script>
+        document.getElementById('fileTest').addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                document.getElementById('result').innerHTML = 'File selected: ' + file.name;
+                alert('Success! File selected: ' + file.name);
+            }
+        });
+        
+        console.log('Page loaded');
+        console.log('Browser:', navigator.userAgent);
+    </script>
+</body>
+</html>

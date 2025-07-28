@@ -1,33 +1,59 @@
+#!/bin/bash
 
-# Delete existing artifacts
-rm genesis.block mychannel.tx
-rm -rf ../../channel-artifacts/*
+# Clean up previous artifacts
+rm -rf ./crypto-config
+rm -f genesis.block logistics-channel.tx
+rm -f OriginOrgMSPanchors.tx DestOrgMSPanchors.tx
 
-#Generate Crypto artifactes for organizations
-# cryptogen generate --config=./crypto-config.yaml --output=./crypto-config/
-
-
-
-# System channel
+# Set the channel name
+CHANNEL_NAME="logistics-channel"
+# Set the system channel name
 SYS_CHANNEL="sys-channel"
 
-# channel name defaults to "mychannel"
-CHANNEL_NAME="mychannel"
+echo "Generating crypto material"
+cryptogen generate --config=./crypto-config.yaml --output=./crypto-config/
+if [ "$?" -ne 0 ]; then
+  echo "Failed to generate crypto material..."
+  exit 1
+fi
+echo "========================================================="
 
-echo $CHANNEL_NAME
 
-# Generate System Genesis block
-configtxgen -profile OrdererGenesis -configPath . -channelID $SYS_CHANNEL  -outputBlock ./genesis.block
+echo "Generating System Genesis Block"
+# Note: For versions newer than v2.1, you may need to use the osnadmin bootstrap command instead.
+# This command is for v2.x.
+configtxgen -profile LogisticsOrdererGenesis -configPath . -channelID $SYS_CHANNEL -outputBlock ./genesis.block
+if [ "$?" -ne 0 ]; then
+  echo "Failed to generate orderer genesis block..."
+  exit 1
+fi
+echo "========================================================="
 
 
-# Generate channel configuration block
-configtxgen -profile BasicChannel -configPath . -outputCreateChannelTx ./$CHANNEL_NAME.tx -channelID $CHANNEL_NAME
+echo "Generating Channel Configuration Transaction"
+configtxgen -profile LogisticsChannel -configPath . -outputCreateChannelTx ./logistics-channel.tx -channelID $CHANNEL_NAME
+if [ "$?" -ne 0 ]; then
+  echo "Failed to generate channel configuration transaction..."
+  exit 1
+fi
+echo "========================================================="
 
-echo "#######    Generating anchor peer update for Org1MSP  ##########"
-configtxgen -profile BasicChannel -configPath . -outputAnchorPeersUpdate ./Org1MSPanchors.tx -channelID $CHANNEL_NAME -asOrg Org1MSP
 
-echo "#######    Generating anchor peer update for Org2MSP  ##########"
-configtxgen -profile BasicChannel -configPath . -outputAnchorPeersUpdate ./Org2MSPanchors.tx -channelID $CHANNEL_NAME -asOrg Org2MSP
+echo "Generating Anchor Peer Update for OriginOrgMSP"
+configtxgen -profile LogisticsChannel -configPath . -outputAnchorPeersUpdate ./OriginOrgMSPanchors.tx -channelID $CHANNEL_NAME -asOrg OriginOrgMSP
+if [ "$?" -ne 0 ]; then
+  echo "Failed to generate anchor peer update for OriginOrgMSP..."
+  exit 1
+fi
+echo "========================================================="
 
-echo "#######    Generating anchor peer update for Org3MSP  ##########"
-configtxgen -profile BasicChannel -configPath . -outputAnchorPeersUpdate ./Org3MSPanchors.tx -channelID $CHANNEL_NAME -asOrg Org3MSP
+
+echo "Generating Anchor Peer Update for DestOrgMSP"
+configtxgen -profile LogisticsChannel -configPath . -outputAnchorPeersUpdate ./DestOrgMSPanchors.tx -channelID $CHANNEL_NAME -asOrg DestOrgMSP
+if [ "$?" -ne 0 ]; then
+  echo "Failed to generate anchor peer update for DestOrgMSP..."
+  exit 1
+fi
+echo "========================================================="
+
+echo "Artifacts generated successfully!"

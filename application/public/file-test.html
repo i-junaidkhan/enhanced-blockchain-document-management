@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head><title>File Input Test</title></head>
+<body>
+    <h1>Basic File Input Test</h1>
+    
+    <input type="file" onchange="alert('File selected: ' + this.files[0].name)">
+    
+    <script>
+        console.log('Browser:', navigator.userAgent);
+        console.log('File API supported:', window.File && window.FileReader && window.FileList && window.Blob);
+    </script>
+</body>
+</html>

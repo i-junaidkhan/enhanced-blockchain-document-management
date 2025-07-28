@@ -1,39 +1,18 @@
-# FabricNetwork-2.x
+cat > README.md << 'EOF'
+# 🔗 Enhanced Blockchain Document Management System
 
-Youtube Channel: https://www.youtube.com/watch?v=SJTdJt6N6Ow&list=PLSBNVhWU6KjW4qo1RlmR7cvvV8XIILub6
+## 📋 Overview
 
+An enterprise-grade blockchain document management system built with Hyperledger Fabric, featuring 8-node architecture, IPFS integration, and real-time document workflows.
 
-Network Topology
+## 🏗️ Architecture
 
-Three Orgs(Peer Orgs)
+- **8 Blockchain Peer Nodes** across 2 organizations
+- **3 Raft Orderer Nodes** for consensus
+- **8 CouchDB State Databases** for rich queries
+- **2 Certificate Authorities** for identity management
+- **1 IPFS Node** for distributed file storage
+- **Web Dashboard** with real-time monitoring
 
-    - Each Org have one peer(Each Endorsing Peer)
-    - Each Org have separate Certificate Authority
-    - Each Peer has Current State database as couch db
+### Network Topology
 
-
-One Orderer Org
-
-    - Three Orderers
-    - One Certificate Authority
-
-
-
-Steps:
-
-1) Clone the repo
-2) Run Certificates Authority Services for all Orgs
-3) Create Cryptomaterials for all organizations
-4) Create Channel Artifacts using Org MSP
-5) Create Channel and join peers
-6) Deploy Chaincode
-   1) Install All dependency
-   2) Package Chaincode
-   3) Install Chaincode on all Endorsing Peer
-   4) Approve Chaincode as per Lifecycle Endorsment Policy
-   5) Commit Chaincode Defination
-7) Create Connection Profiles
-8) Start API Server
-9) Register User using API
-10) Invoke Chaincode Transaction
-11) Query Chaincode Transaction
