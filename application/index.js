@@ -4,6 +4,7 @@ const express = require('express');
 const { Gateway, Wallets } = require('fabric-network');
 const { create } = require('ipfs-http-client');
 const path = require('path');
+const cors = require('cors');
 const fs = require('fs');
 const crypto = require('crypto');
 const fileUpload = require('express-fileupload');
@@ -50,12 +51,7 @@ app.use((req, res, next) => {
 });
 
 // --- CORS Middleware ---
-app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    next();
-});
+app.use(cors());
 
 // --- Main Dashboard Route ---
 app.get('/', (req, res) => {
@@ -364,6 +360,161 @@ app.get('/nodes/:nodeId/documents/:docId', async (req, res) => {
     }
 });
 
+
+// Enhanced messages endpoint with message history tracking
+app.get('/nodes/:nodeId/messages/enhanced', async (req, res) => {
+    const { nodeId } = req.params;
+    
+    if (!NODES[nodeId]) {
+        return res.status(400).json({ error: 'Invalid node ID' });
+    }
+
+    const gateway = new Gateway();
+    try {
+        const ccp = buildCCP();
+        const wallet = await Wallets.newFileSystemWallet(walletPath);
+
+        await gateway.connect(ccp, { 
+            wallet, 
+            identity: identityLabel,
+            discovery: { enabled: true, asLocalhost: true }
+        });
+
+        const network = await gateway.getNetwork(channelName);
+        const contract = network.getContract(chaincodeName);
+
+        let messages = [];
+        
+        try {
+            // Try to get blockchain messages
+            const result = await contract.evaluateTransaction('GetMessagesForNode', nodeId);
+            const parsedMessages = result.toString();
+            messages = parsedMessages ? JSON.parse(parsedMessages) : [];
+        } catch (chaincodeError) {
+            console.warn('⚠️  Enhanced messaging not available, creating message history from documents');
+            
+            // Create messages based on document approvals/rejections
+            try {
+                const docResult = await contract.evaluateTransaction('GetDocumentsForNode', nodeId);
+                const parsedDocs = docResult.toString();
+                const documents = parsedDocs ? JSON.parse(parsedDocs) : [];
+                
+                messages = documents.flatMap(doc => {
+                    const docMessages = [];
+                    
+                    // Message when document was sent TO this node
+                    if (doc.recipientNode === nodeId && doc.senderNode !== nodeId) {
+                        docMessages.push({
+                            id: `doc-${doc.docID}-received`,
+                            from: doc.senderNode,
+                            fromName: NODES[doc.senderNode]?.name || doc.senderNode,
+                            to: nodeId,
+                            toName: NODES[nodeId].name,
+                            message: `New document received: ${doc.fileName}`,
+                            type: 'document-received',
+                            docID: doc.docID,
+                            timestamp: doc.timestamp,
+                            priority: 'normal'
+                        });
+                    }
+                    
+                    // Message when document was sent FROM this node
+                    if (doc.senderNode === nodeId && doc.recipientNode !== nodeId) {
+                        let statusMessage = 'Document sent and pending approval';
+                        let messageType = 'document-sent';
+                        let priority = 'normal';
+                        
+                        if (doc.status === 'approved') {
+                            statusMessage = `Document approved: ${doc.fileName}`;
+                            messageType = 'approval-received';
+                            priority = 'high';
+                        } else if (doc.status === 'rejected') {
+                            statusMessage = `Document rejected: ${doc.fileName}`;
+                            messageType = 'rejection-received';
+                            priority = 'high';
+                        }
+                        
+                        docMessages.push({
+                            id: `doc-${doc.docID}-status`,
+                            from: doc.recipientNode,
+                            fromName: NODES[doc.recipientNode]?.name || doc.recipientNode,
+                            to: nodeId,
+                            toName: NODES[nodeId].name,
+                            message: statusMessage,
+                            type: messageType,
+                            docID: doc.docID,
+                            timestamp: doc.timestamp,
+                            priority: priority
+                        });
+                    }
+                    
+                    return docMessages;
+                });
+                
+            } catch (docError) {
+                console.warn('Could not create message history from documents');
+            }
+        }
+        
+        // Sort messages by timestamp (newest first)
+        messages.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        // Add read status (all messages are initially unread)
+        const enhancedMessages = messages.map(msg => ({
+            ...msg,
+            read: false,
+            category: msg.type?.includes('approval') ? 'approvals' : 
+                     msg.type?.includes('rejection') ? 'rejections' : 'general'
+        }));
+        
+        res.json({
+            success: true,
+            nodeId: nodeId,
+            nodeName: NODES[nodeId].name,
+            nodeFaction: NODES[nodeId].faction,
+            messages: enhancedMessages,
+            count: enhancedMessages.length,
+            summary: {
+                unread: enhancedMessages.filter(m => !m.read).length,
+                approvals: enhancedMessages.filter(m => m.category === 'approvals').length,
+                rejections: enhancedMessages.filter(m => m.category === 'rejections').length,
+                general: enhancedMessages.filter(m => m.category === 'general').length
+            }
+        });
+
+    } catch (error) {
+        console.error('Failed to retrieve enhanced messages:', error);
+        res.status(500).json({ 
+            error: 'Failed to retrieve messages',
+            message: error.message 
+        });
+    } finally {
+        gateway.disconnect();
+    }
+});
+
+// Mark messages as read
+app.post('/nodes/:nodeId/messages/:messageId/read', (req, res) => {
+    const { nodeId, messageId } = req.params;
+    
+    if (!NODES[nodeId]) {
+        return res.status(400).json({ error: 'Invalid node ID' });
+    }
+    
+    // In a real implementation, you would update the read status in your database
+    // For now, we'll just return success
+    res.json({
+        success: true,
+        message: 'Message marked as read',
+        nodeId: nodeId,
+        messageId: messageId,
+        timestamp: new Date().toISOString()
+    });
+});
+
+
+
+
 // Get all documents for a specific node
 app.get('/nodes/:nodeId/documents', async (req, res) => {
     const { nodeId } = req.params;
@@ -389,7 +540,9 @@ app.get('/nodes/:nodeId/documents', async (req, res) => {
         let documents = [];
         try {
             const result = await contract.evaluateTransaction('GetDocumentsForNode', nodeId);
-            documents = JSON.parse(result.toString());
+            const parsedDocs = result.toString();
+            documents = parsedDocs ? JSON.parse(parsedDocs) : [];
+
         } catch (chaincodeError) {
             console.warn('⚠️  Enhanced chaincode method not available, using mock data');
             // Return mock documents for testing
@@ -559,7 +712,8 @@ app.get('/nodes/:nodeId/messages', async (req, res) => {
         let messages = [];
         try {
             const result = await contract.evaluateTransaction('GetMessagesForNode', nodeId);
-            messages = JSON.parse(result.toString());
+            const parsedMessages = result.toString();
+            messages = parsedMessages ? JSON.parse(parsedMessages) : [];
         } catch (chaincodeError) {
             console.warn('⚠️  Enhanced messaging not available, using mock data');
             // Return mock messages
@@ -592,6 +746,312 @@ app.get('/nodes/:nodeId/messages', async (req, res) => {
         gateway.disconnect();
     }
 });
+
+
+// Get all documents across the entire network
+app.get('/documents/all', async (req, res) => {
+    const gateway = new Gateway();
+    try {
+        const ccp = buildCCP();
+        const wallet = await Wallets.newFileSystemWallet(walletPath);
+
+        await gateway.connect(ccp, { 
+            wallet, 
+            identity: identityLabel,
+            discovery: { enabled: true, asLocalhost: true }
+        });
+
+        const network = await gateway.getNetwork(channelName);
+        const contract = network.getContract(chaincodeName);
+
+        let allDocuments = [];
+        
+        // Aggregate documents from all nodes
+        for (const nodeId of Object.keys(NODES)) {
+            try {
+                const result = await contract.evaluateTransaction('GetDocumentsForNode', nodeId);
+                const parsedDocs = result.toString();
+                const nodeDocs = parsedDocs ? JSON.parse(parsedDocs) : [];
+                
+                // Add node context to each document
+                const enhancedDocs = nodeDocs.map(doc => ({
+                    ...doc,
+                    viewingFromNode: nodeId,
+                    viewingFromNodeName: NODES[nodeId].name,
+                    viewingFromFaction: NODES[nodeId].faction
+                }));
+                
+                allDocuments = allDocuments.concat(enhancedDocs);
+            } catch (nodeError) {
+                console.warn(`⚠️  Could not fetch documents for node ${nodeId}:`, nodeError.message);
+            }
+        }
+        
+        // Remove duplicates based on docID
+        const uniqueDocuments = allDocuments.filter((doc, index, self) => 
+            index === self.findIndex(d => d.docID === doc.docID)
+        );
+        
+        // Sort by timestamp (newest first)
+        uniqueDocuments.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        res.json({
+            success: true,
+            documents: uniqueDocuments,
+            totalCount: uniqueDocuments.length,
+            nodesCovered: Object.keys(NODES).length,
+            summary: {
+                pending: uniqueDocuments.filter(d => d.status === 'pending').length,
+                approved: uniqueDocuments.filter(d => d.status === 'approved').length,
+                rejected: uniqueDocuments.filter(d => d.status === 'rejected').length
+            }
+        });
+
+    } catch (error) {
+        console.error('Failed to retrieve all documents:', error);
+        res.status(500).json({ 
+            error: 'Failed to retrieve all documents',
+            message: error.message 
+        });
+    } finally {
+        gateway.disconnect();
+    }
+});
+
+
+// Export documents as CSV
+app.get('/export/documents/csv', async (req, res) => {
+    const { nodeId } = req.query;
+    
+    const gateway = new Gateway();
+    try {
+        const ccp = buildCCP();
+        const wallet = await Wallets.newFileSystemWallet(walletPath);
+
+        await gateway.connect(ccp, { 
+            wallet, 
+            identity: identityLabel,
+            discovery: { enabled: true, asLocalhost: true }
+        });
+
+        const network = await gateway.getNetwork(channelName);
+        const contract = network.getContract(chaincodeName);
+
+        let documents = [];
+        
+        if (nodeId && NODES[nodeId]) {
+            // Export for specific node
+            try {
+                const result = await contract.evaluateTransaction('GetDocumentsForNode', nodeId);
+                const parsedDocs = result.toString();
+                documents = parsedDocs ? JSON.parse(parsedDocs) : [];
+            } catch (error) {
+                console.warn('Using mock data for export');
+                documents = [];
+            }
+        } else {
+            // Export all documents (similar to all documents endpoint)
+            for (const node of Object.keys(NODES)) {
+                try {
+                    const result = await contract.evaluateTransaction('GetDocumentsForNode', node);
+                    const parsedDocs = result.toString();
+                    const nodeDocs = parsedDocs ? JSON.parse(parsedDocs) : [];
+                    documents = documents.concat(nodeDocs);
+                } catch (error) {
+                    console.warn(`Could not fetch documents for node ${node}`);
+                }
+            }
+        }
+        
+        // Remove duplicates
+        const uniqueDocuments = documents.filter((doc, index, self) => 
+            index === self.findIndex(d => d.docID === doc.docID)
+        );
+        
+        // Create CSV content
+        const csvHeader = 'Document ID,File Name,Sender Node,Recipient Node,Status,Timestamp,IPFS Hash\n';
+        const csvRows = uniqueDocuments.map(doc => 
+            `"${doc.docID}","${doc.fileName}","${doc.senderNode}","${doc.recipientNode}","${doc.status}","${doc.timestamp}","${doc.ipfsHash}"`
+        ).join('\n');
+        
+        const csvContent = csvHeader + csvRows;
+        
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="documents_export_${new Date().toISOString().split('T')[0]}.csv"`);
+        res.send(csvContent);
+
+    } catch (error) {
+        console.error('Failed to export documents:', error);
+        res.status(500).json({ 
+            error: 'Failed to export documents',
+            message: error.message 
+        });
+    } finally {
+        gateway.disconnect();
+    }
+});
+
+// Export documents as JSON
+app.get('/export/documents/json', async (req, res) => {
+    const { nodeId } = req.query;
+    
+    const gateway = new Gateway();
+    try {
+        const ccp = buildCCP();
+        const wallet = await Wallets.newFileSystemWallet(walletPath);
+
+        await gateway.connect(ccp, { 
+            wallet, 
+            identity: identityLabel,
+            discovery: { enabled: true, asLocalhost: true }
+        });
+
+        const network = await gateway.getNetwork(channelName);
+        const contract = network.getContract(chaincodeName);
+
+        let documents = [];
+        
+        if (nodeId && NODES[nodeId]) {
+            try {
+                const result = await contract.evaluateTransaction('GetDocumentsForNode', nodeId);
+                const parsedDocs = result.toString();
+                documents = parsedDocs ? JSON.parse(parsedDocs) : [];
+            } catch (error) {
+                documents = [];
+            }
+        } else {
+            // Export all documents
+            for (const node of Object.keys(NODES)) {
+                try {
+                    const result = await contract.evaluateTransaction('GetDocumentsForNode', node);
+                    const parsedDocs = result.toString();
+                    const nodeDocs = parsedDocs ? JSON.parse(parsedDocs) : [];
+                    documents = documents.concat(nodeDocs);
+                } catch (error) {
+                    console.warn(`Could not fetch documents for node ${node}`);
+                }
+            }
+        }
+        
+        // Remove duplicates and add metadata
+        const uniqueDocuments = documents.filter((doc, index, self) => 
+            index === self.findIndex(d => d.docID === doc.docID)
+        );
+        
+        const exportData = {
+            exportTimestamp: new Date().toISOString(),
+            exportedBy: nodeId || 'all-nodes',
+            totalDocuments: uniqueDocuments.length,
+            summary: {
+                pending: uniqueDocuments.filter(d => d.status === 'pending').length,
+                approved: uniqueDocuments.filter(d => d.status === 'approved').length,
+                rejected: uniqueDocuments.filter(d => d.status === 'rejected').length
+            },
+            documents: uniqueDocuments
+        };
+        
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename="documents_export_${new Date().toISOString().split('T')[0]}.json"`);
+        res.json(exportData);
+
+    } catch (error) {
+        console.error('Failed to export documents:', error);
+        res.status(500).json({ 
+            error: 'Failed to export documents',
+            message: error.message 
+        });
+    } finally {
+        gateway.disconnect();
+    }
+});
+
+
+// Network statistics and analytics
+app.get('/network/statistics', async (req, res) => {
+    const gateway = new Gateway();
+    try {
+        const ccp = buildCCP();
+        const wallet = await Wallets.newFileSystemWallet(walletPath);
+
+        await gateway.connect(ccp, { 
+            wallet, 
+            identity: identityLabel,
+            discovery: { enabled: true, asLocalhost: true }
+        });
+
+        const network = await gateway.getNetwork(channelName);
+        const contract = network.getContract(chaincodeName);
+
+        let allDocuments = [];
+        let nodeStats = {};
+        
+        // Collect statistics from all nodes
+        for (const nodeId of Object.keys(NODES)) {
+            try {
+                const result = await contract.evaluateTransaction('GetDocumentsForNode', nodeId);
+                const parsedDocs = result.toString();
+                const nodeDocs = parsedDocs ? JSON.parse(parsedDocs) : [];
+                
+                nodeStats[nodeId] = {
+                    name: NODES[nodeId].name,
+                    faction: NODES[nodeId].faction,
+                    documentsReceived: nodeDocs.filter(d => d.recipientNode === nodeId).length,
+                    documentsSent: nodeDocs.filter(d => d.senderNode === nodeId).length,
+                    pendingApprovals: nodeDocs.filter(d => d.recipientNode === nodeId && d.status === 'pending').length
+                };
+                
+                allDocuments = allDocuments.concat(nodeDocs);
+            } catch (error) {
+                nodeStats[nodeId] = {
+                    name: NODES[nodeId].name,
+                    faction: NODES[nodeId].faction,  
+                    error: 'Could not fetch data'
+                };
+            }
+        }
+        
+        // Remove duplicates and calculate global stats
+        const uniqueDocuments = allDocuments.filter((doc, index, self) => 
+            index === self.findIndex(d => d.docID === doc.docID)
+        );
+        
+        const statistics = {
+            timestamp: new Date().toISOString(),
+            network: {
+                totalNodes: Object.keys(NODES).length,
+                originNodes: Object.keys(NODES).filter(n => NODES[n].faction === 'origin').length,
+                destNodes: Object.keys(NODES).filter(n => NODES[n].faction === 'dest').length
+            },
+            documents: {
+                total: uniqueDocuments.length,
+                pending: uniqueDocuments.filter(d => d.status === 'pending').length,
+                approved: uniqueDocuments.filter(d => d.status === 'approved').length,
+                rejected: uniqueDocuments.filter(d => d.status === 'rejected').length
+            },
+            nodeStatistics: nodeStats,
+            recentActivity: uniqueDocuments
+                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                .slice(0, 10)
+        };
+        
+        res.json({
+            success: true,
+            statistics: statistics
+        });
+
+    } catch (error) {
+        console.error('Failed to retrieve network statistics:', error);
+        res.status(500).json({ 
+            error: 'Failed to retrieve network statistics',
+            message: error.message 
+        });
+    } finally {
+        gateway.disconnect();
+    }
+});
+
+
+
 
 // Get all nodes information
 app.get('/nodes', (req, res) => {

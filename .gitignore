@@ -3,6 +3,8 @@ node_modules/
 npm-debug.log*
 *.log
 
+*.tar.gz
+
 # Blockchain Wallets & Private Keys (CRITICAL - DON'T UPLOAD)
 application/wallet/
 **/wallet/

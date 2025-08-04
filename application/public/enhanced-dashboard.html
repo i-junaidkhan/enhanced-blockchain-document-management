@@ -344,9 +344,201 @@
                 grid-template-columns: 1fr;
             }
         }
+
+
+                /* COMPACT DASHBOARD FOR SCREENSHOTS */
+        .compact-mode {
+            zoom: 0.85; /* Scale down entire content */
+        }
+
+        .compact-mode .container {
+            padding: 10px; /* Reduced from 20px */
+            max-width: 100vw;
+        }
+
+        .compact-mode .header {
+            padding: 10px 15px; /* Reduced from 20px */
+            margin-bottom: 15px; /* Reduced from 30px */
+        }
+
+        .compact-mode .header h1 {
+            font-size: 1.4rem; /* Reduced from 2rem */
+        }
+
+        .compact-mode .main-grid {
+            gap: 15px; /* Reduced from 30px */
+            margin-bottom: 15px; /* Reduced from 30px */
+        }
+
+        .compact-mode .card {
+            padding: 15px; /* Reduced from 25px */
+        }
+
+        .compact-mode .card h2 {
+            font-size: 1.2rem; /* Reduced from 1.5rem */
+            margin-bottom: 10px; /* Reduced from 20px */
+        }
+
+        .compact-mode .form-group {
+            margin: 8px 0; /* Reduced from 15px */
+        }
+
+        .compact-mode .faction-group {
+            padding: 8px; /* Reduced from 15px */
+        }
+
+        .compact-mode .node-option {
+            padding: 4px; /* Reduced from 8px */
+            margin: 2px 0; /* Reduced from 5px */
+        }
+
+        .compact-mode input[type="file"], 
+        .compact-mode select, 
+        .compact-mode textarea {
+            padding: 8px; /* Reduced from 12px */
+            font-size: 0.9rem; /* Reduced from 1rem */
+        }
+
+        .compact-mode .btn {
+            padding: 8px 15px; /* Reduced from 15px 30px */
+            font-size: 0.9rem; /* Reduced from 1.1rem */
+        }
+
+        .compact-mode .document-grid {
+            max-height: 300px; /* Reduced from 500px */
+        }
+
+        .compact-mode .document-card {
+            padding: 8px; /* Reduced from 15px */
+        }
+        
+
+                /* ULTRA-COMPACT MODE - EVERYTHING ON ONE SCREEN */
+        .ultra-compact {
+            font-size: 12px; /* Reduce base font size */
+        }
+
+        .ultra-compact .container {
+            padding: 5px;
+            max-width: 100vw;
+        }
+
+        .ultra-compact .header {
+            padding: 8px 12px;
+            margin-bottom: 8px;
+        }
+
+        .ultra-compact .header h1 {
+            font-size: 1.1rem;
+        }
+
+        .ultra-compact .main-grid {
+            gap: 8px;
+            margin-bottom: 8px;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .ultra-compact .card {
+            padding: 8px;
+        }
+
+        .ultra-compact .card h2 {
+            font-size: 0.95rem;
+            margin-bottom: 6px;
+        }
+
+        .ultra-compact .form-group {
+            margin: 4px 0;
+        }
+
+        .ultra-compact .form-group label {
+            font-size: 0.8rem;
+            margin-bottom: 2px;
+        }
+
+        .ultra-compact .faction-group {
+            padding: 4px;
+            margin: 4px 0;
+        }
+
+        .ultra-compact .faction-group h4 {
+            font-size: 0.8rem;
+            margin-bottom: 4px;
+        }
+
+        .ultra-compact .node-option {
+            padding: 2px 4px;
+            margin: 1px 0;
+            font-size: 0.75rem;
+        }
+
+        .ultra-compact input[type="file"], 
+        .ultra-compact select, 
+        .ultra-compact textarea {
+            padding: 4px;
+            font-size: 0.75rem;
+        }
+
+        .ultra-compact .btn {
+            padding: 4px 8px;
+            font-size: 0.75rem;
+        }
+
+        .ultra-compact .document-grid {
+            max-height: 150px;
+            font-size: 0.7rem;
+        }
+
+        .ultra-compact .document-card {
+            padding: 4px;
+            margin-bottom: 3px;
+        }
+
+        .ultra-compact .document-actions {
+            gap: 3px;
+            margin-top: 4px;
+        }
+
+        .ultra-compact .action-btn {
+            padding: 2px 6px;
+            font-size: 0.65rem;
+        }
+
+        .ultra-compact .status-badge {
+            padding: 1px 6px;
+            font-size: 0.65rem;
+        }
+
+        .ultra-compact .checkbox-group {
+            gap: 2px;
+        }
+
+        .ultra-compact .checkbox-item {
+            padding: 1px;
+            font-size: 0.7rem;
+        }
+
+        /* Network Management Section - Make it horizontal */
+        .ultra-compact .card:last-of-type {
+            grid-column: 1 / -1; /* Span full width */
+        }
+
+        .ultra-compact .card:last-of-type > div:first-of-type {
+            gap: 6px;
+        }
+
+        .ultra-compact #managementOutput {
+            margin-top: 6px;
+            padding: 6px;
+            font-size: 0.7rem;
+            max-height: 80px;
+            overflow-y: auto;
+        }
+
+
     </style>
 </head>
-<body>
+<body >
     <div class="container">
         <header class="header">
             <h1>📋 Enhanced Document Management System</h1>
@@ -416,7 +608,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label>Allowed Viewers (Same Faction Only):</label>
+                        <label>Allowed Viewers (Depend on "Sender Node"):</label>
                         <div class="checkbox-group" id="allowedViewers">
                             <!-- Populated dynamically based on sender selection -->
                         </div>
